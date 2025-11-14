@@ -129,6 +129,7 @@ async def chat(request: ChatRequest):
     max_tokens = request.max_tokens if request.max_tokens is not None else DEFAULT_MAX_TOKENS
 
     payload = {
+        "model": OPENAI_MODEL,
         "messages": request.messages,
         "temperature": temperature,
         "max_tokens": max_tokens,
