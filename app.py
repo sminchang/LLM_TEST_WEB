@@ -20,13 +20,30 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # 환경변수에서 설정 읽기
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "http://172.30.1.58:8000/v1")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "http://localhost:8000/v1")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-oss-120b")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL")
+if not OPENAI_MODEL:
+    try:
+        # 모델 목록 API 호출
+        with httpx.Client(timeout=5.0) as client:
+            response = client.get(f"{OPENAI_BASE_URL}/models")
+            if response.status_code == 200:
+                models = response.json().get("data", [])
+                if models:
+                    OPENAI_MODEL = models[0]["id"]
+                    print(f"✓ 모델 자동 감지: {OPENAI_MODEL}")
+                else:
+                    raise ValueError("모델 목록이 비어있습니다")
+            else:
+                raise ValueError(f"API 응답 오류: {response.status_code}")
+    except Exception as e:
+        print(f"모델 자동 감지 실패: {e}")
+        OPENAI_MODEL = "gpt-oss-120b"
 
 # 기본값 (사용자가 UI에서 변경 가능)
 DEFAULT_TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
-DEFAULT_MAX_TOKENS = int(os.getenv("MAX_TOKENS", "500"))
+DEFAULT_MAX_TOKENS = int(os.getenv("MAX_TOKENS", "2000"))
 
 # 전역 HTTP 클라이언트 (connection pooling을 위해 재사용)
 http_client: Optional[httpx.AsyncClient] = None
